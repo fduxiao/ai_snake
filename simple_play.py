@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from basic_game import Game, MapStatus, Direction
 import curses
 import argparse
@@ -52,15 +53,13 @@ def interactive_decider(stdscr):
         return rel_map.get(d, Direction.NOPE)
 
 
-def main(stdscr):
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-w', '--width', type=int, default=20)
-    parser.add_argument('-l', '--height', type=int, default=10)
-    args = parser.parse_args()
+def display_and_play_game(stdscr, width, height, decider=None):
+    if decider is None:
+        def decider(_):
+            return interactive_decider(stdscr)
+    game = Game(width=width, height=height)
 
-    game = Game(width=args.width, height=args.height)
-
-    for game_map in game.play(lambda _: interactive_decider(stdscr)):
+    for game_map in game.play(decider):
         display_game(game_map, stdscr)
     if game.result is True:
         stdscr.addstr("Success!")
@@ -71,6 +70,14 @@ def main(stdscr):
         stdscr.addstr("Unknown error")
     stdscr.addstr("\npress any key to exit")
     stdscr.getkey()
+
+
+def main(stdscr):
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-w', '--width', type=int, default=20)
+    parser.add_argument('-l', '--height', type=int, default=10)
+    args = parser.parse_args()
+    display_and_play_game(stdscr, args.width, args.height)
 
 
 if __name__ == '__main__':

@@ -2,17 +2,7 @@ import random
 import enum
 
 
-__all__ = ['Direction', 'Game', 'MapStatus', 'enum2tensor']
-
-
-def enum2tensor(e):
-    tensor = list()
-    for i in type(e):
-        if i is e:
-            tensor.append(1)
-        else:
-            tensor.append(0)
-    return tensor
+__all__ = ['Direction', 'Game', 'MapStatus']
 
 
 class Direction(enum.Enum):
@@ -52,7 +42,7 @@ class Game:
     def __init__(self, width=80, height=24, x: int=None, y: int=None, direction=None):
         assert self.reset(width, height, x, y, direction)
 
-    def reset(self, width=80, height=24, x: int=None, y: int=None, direction=None):
+    def reset(self, width, height, x: int=None, y: int=None, direction=None):
         self.width = width
         self.height = height
         self.snake = list()
