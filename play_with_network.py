@@ -1,5 +1,6 @@
+#!/usr/bin/env python3
 from simple_play import display_and_play_game
-from network import get_decider
+from bigger import get_decider
 import tensorflow as tf
 import time
 
