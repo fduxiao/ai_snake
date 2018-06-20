@@ -2,15 +2,14 @@ import random
 import enum
 
 
-__all__ = ['Direction', 'Game', 'MapStatus']
+__all__ = ['Direction', 'Game', 'MapStatus', 'MoveStatus']
 
 
 class Direction(enum.Enum):
-    NOPE = 0
-    UP = 1
-    DOWN = 2
-    LEFT = 3
-    RIGHT = 4
+    UP = 0
+    DOWN = 1
+    LEFT = 2
+    RIGHT = 3
 
 
 class MapStatus(enum.Enum):
@@ -39,10 +38,22 @@ class Game:
     direction: Direction
     result: None
 
+    def copy(self):
+        game = Game()
+        game.width = self.width
+        game.height = self.height
+        game.snake = self.snake.copy()
+        game.food = self.food
+        game.direction = self.direction
+        game.result = self.result
+        return game
+
     def __init__(self, width=80, height=24, x: int=None, y: int=None, direction=None):
-        assert self.reset(width, height, x, y, direction)
+        if not self.reset(width, height, x, y, direction):
+            raise ValueError("The game should have at least two empty block")
 
     def reset(self, width, height, x: int=None, y: int=None, direction=None):
+        self.result = None
         self.width = width
         self.height = height
         self.snake = list()
@@ -50,18 +61,21 @@ class Game:
         if x is None:
             x = random.randrange(width)
         else:
-            assert x in range(width)
+            if x not in range(width):
+                raise ValueError("Wrong x value {} with width {}".format(x, width))
 
         if y is None:
             y = random.randrange(height)
         else:
-            assert y in range(height)
+            if y not in range(height):
+                raise ValueError("Wrong y value {} with height {}".format(y, height))
 
         if direction is None:
             direction = Direction(random.randrange(4))
         else:
             direction = Direction(direction)
-            assert direction.value in range(4)
+            if direction.value not in range(4):
+                raise ValueError("Unknown direction {}".format(direction))
 
         self.direction = direction
         self.snake.append((x, y))
@@ -83,7 +97,7 @@ class Game:
         assert isinstance(self.direction, Direction)
         # each the snake must move
         # so the direction should not be nope
-        assert self.direction is not Direction.NOPE
+        assert self.direction is not None
 
         head = self.snake[0]
         if self.direction is Direction.UP:
@@ -99,14 +113,14 @@ class Game:
         # then remove the tail
         return self.snake.pop(-1)
 
-    def next_step(self, direction=Direction.NOPE) -> MoveStatus:
+    def next_step(self, direction=None) -> MoveStatus:
         """
 
         :param direction: which direction to go
         :return: false if the snake hits something
                  true for success
         """
-        if direction is not Direction.NOPE:
+        if direction is not None:
             self.direction = direction
 
         tail = self.move()
@@ -121,7 +135,7 @@ class Game:
             return MoveStatus.EATEN
         return MoveStatus.ALIVE
 
-    def draw_map(self):
+    def draw_map(self) -> [[MapStatus]]:
         the_map = list()
 
         # blank
@@ -174,3 +188,35 @@ class Game:
                     return True
             else:
                 pass
+
+    def train(self, decider: callable):
+        """
+        This should give the state after the decider is called
+
+        :param decider: actual decider
+        :return: yield previous state, post state
+        """
+        while True:
+            game_before = self.copy()
+
+            direction = decider(self)
+            move_status = self.next_step(direction)
+
+            game_after = self.copy()
+
+            if move_status is MoveStatus.DEAD:
+                yield game_before, None
+                return False
+            elif move_status is MoveStatus.EATEN:
+                if not self.new_food():  # no spare space
+                    yield game_before, True
+                    return True
+            else:
+                yield game_before, game_after
+
+    def head2food(self):
+        head = self.snake[0]
+        food = self.food
+        delta_x = head[0] - food[0]
+        delta_y = head[1] - food[1]
+        return (delta_x ** 2 + delta_y ** 2) ** 0.5

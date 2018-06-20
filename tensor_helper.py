@@ -1,35 +1,39 @@
-import enum as _enum
-import pickle
+import torch
+from basic_game import Game, Direction, MapStatus
 
 
-def enum2tensor(e):
-    tensor = list()
-    for i in type(e):
-        if i is e:
-            tensor.append(1)
-        else:
-            tensor.append(0)
-    return tensor
+def dir2tensor(direction: Direction):
+    # noinspection PyTypeChecker
+    direction_list = [0.] * len(Direction)
+    direction_list[direction.value] = 1.
+    # noinspection PyCallingNonCallable,PyUnresolvedReferences
+    return torch.tensor([direction_list], dtype=torch.float32)
 
 
-def flatten_tensor(tensor):
-    if isinstance(tensor, list):
-        result = list()
-        for item in tensor:
-            result += flatten_tensor(item)
-        return result
-    elif isinstance(tensor, _enum.Enum):
-        return enum2tensor(tensor)
-    else:
-        return tensor
+def game2tensor(game: Game, is_map=False):
+
+    if game is None:
+        return None
+    elif isinstance(game, bool):
+        return None
+
+    game_map = game
+    if not is_map:
+        game_map = game.draw_map()
+    game_list = list()
+    for line in game_map:
+        for cell in line:
+            # noinspection PyTypeChecker
+            cell_list = [0.] * len(MapStatus)
+            cell_list[cell.value] = 1.
+            game_list += cell_list
+    # noinspection PyCallingNonCallable,PyUnresolvedReferences
+    return torch.tensor([game_list], dtype=torch.float32)
 
 
-def load_pickle(file_path):
-    objs = []
-    f = open(file_path, 'rb')
-    while 1:
-        try:
-            objs.append(pickle.load(f))
-        except EOFError:
-            break
-    return objs
+def map2tensor(game_map):
+    if game_map is None:
+        return None
+    elif isinstance(game_map, bool):
+        return None
+    return game2tensor(game_map, is_map=True)

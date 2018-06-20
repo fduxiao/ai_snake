@@ -39,6 +39,11 @@ def display_game(game_map: list, stdscr):
     stdscr.refresh()
 
 
+def print_screen(stdscr, *args, sep=' ', end='\n'):
+    stdscr.addstr(sep.join(map(str, args))+end)
+    stdscr.refresh()
+
+
 def interactive_decider(stdscr):
     rel_map = {
         curses.KEY_UP: Direction.UP,
