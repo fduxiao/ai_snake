@@ -29,14 +29,14 @@ class MoveStatus(enum.Enum):
 
 
 class Game:
-    width: int
-    height: int
+    width = 0
+    height = 0
 
-    snake: list
-    food: tuple
+    snake = None
+    food = None
 
-    direction: Direction
-    result: None
+    direction = None
+    result = None
 
     def copy(self):
         game = Game()

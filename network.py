@@ -10,7 +10,8 @@ class Neuron(nn.Module):
         self.relu = nn.ReLU()
 
     def forward(self, input_tensor):
-        return self.relu(self.linear(input_tensor))  # activated output
+        activated = self.relu(self.linear(input_tensor))
+        return activated
 
 
 class DNN(nn.Module):
@@ -40,7 +41,7 @@ class DQN(nn.Module):
         input_dim = width * height * len(MapStatus)
         # noinspection PyTypeChecker
         output_dim = len(Direction)
-        hidden_dim = width * height * 2
+        hidden_dim = input_dim * 2
         self.dnn = DNN(input_dim, *([hidden_dim] * 2), output_dim)
         # self.linear = nn.Linear(hidden_dim, output_dim)
         # self.softmax = nn.Softmax(1)

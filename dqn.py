@@ -71,6 +71,18 @@ class DQNTrainer:
         if optimizer is None:
             self.optimizer = optim.Adam(policy_net.parameters())
 
+    def save_trainer(self, dump):
+        dump(self.decay)
+        dump(self.memory)
+
+    def load_trainer(self, load):
+        self.decay = load()
+        self.memory = load()
+
+    @property
+    def total_steps(self):
+        return int(-math.log(self.decay) * self.eps_decay)
+
     def select_action(self, state):
 
         sample = random.random()
@@ -96,7 +108,7 @@ class DQNTrainer:
             self.target_net.load_state_dict(self.policy_net.state_dict())
 
         if len(self.memory) < self.batch_size:
-            return
+            return "insufficient memory {}".format(len(self.memory))
         transitions = self.memory.sample(self.batch_size)
         batch = Transition(*zip(*transitions))
 
@@ -134,6 +146,7 @@ class DQNTrainer:
         for param in self.policy_net.parameters():
             param.grad.data.clamp_(-1, 1)
         self.optimizer.step()
+        return loss.item()
 
     def __call__(self):
-        self.train_step()
+        return self.train_step()
