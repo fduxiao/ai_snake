@@ -4,8 +4,9 @@ import os
 import pickle
 import time
 import torch
+import torch.optim as optim
 from basic_game import Game, Direction
-from dqn import DQNTrainer
+from dqn import DQNTrainer, next_epsilon
 from network import DQN
 from simple_play import display_game, print_screen
 from tensor_helper import game2tensor
@@ -14,17 +15,41 @@ SLEEP = 0.1
 SAVE_TIME = 1000
 WIDTH = 20
 HEIGHT = 10
+DECAY_STEP = 200
 SIDE = math.sqrt(WIDTH*HEIGHT)
+MAX_DIST = math.ceil(math.sqrt(WIDTH ** 2 + HEIGHT ** 2))
 policy_network = DQN(width=WIDTH, height=HEIGHT)
+optimizer = optim.SGD(policy_network.parameters(), lr=1e-3)
 POLICY_PATH = 'data/policy.pt'
 if os.path.isfile(POLICY_PATH):
     policy_network = torch.load(POLICY_PATH)
 
-target_network = DQN(width=WIDTH, height=HEIGHT)
+
+class SnakeTrainer(DQNTrainer):
+
+    def __init__(self, *args, **kwargs):
+        super(SnakeTrainer, self).__init__(*args, **kwargs)
+        self.snake_step_info = dict()
+
+    def decide_epsilon(self, game: Game):
+        snake_len = len(game.snake)
+        decay = self.snake_step_info.get(snake_len, 1)
+        epsilon, self.snake_step_info[snake_len] = next_epsilon(
+            self.eps_start, self.eps_end, self.decay_step, decay
+        )
+        return epsilon
+
+    def save_trainer(self, dump):
+        super().save_trainer(dump)
+        dump(self.snake_step_info)
+
+    def load_trainer(self, load):
+        super().load_trainer(load)
+        self.snake_step_info = load()
 
 
 # noinspection PyTypeChecker
-trainer = DQNTrainer(policy_network, target_network, len(Direction), eps_decay=100000)
+trainer = SnakeTrainer(policy_network, len(Direction), decay_step=DECAY_STEP)
 TRAINER_PATH = 'data/trainer.pkl'
 if os.path.isfile(TRAINER_PATH):
     with open(TRAINER_PATH, 'rb') as f_decay_read:
@@ -35,7 +60,8 @@ class Decider:
     action = None
 
     def __call__(self, game):
-        action = trainer.select_action(game2tensor(game))
+        epsilon = trainer.decide_epsilon(game)
+        action = trainer.select_action(game2tensor(game), epsilon)
         self.action = action
         # change to game format
         action = Direction(action.item())
@@ -71,31 +97,38 @@ def main(stdscr):
     def my_print(*args, **kwargs):
         return print_screen(stdscr, *args, **kwargs)
 
+    trainer.print = my_print
     nope(my_print)
 
+    loss = None
     try:  # for user interrupt
         while True:
             # Initialize the environment and state
             decider = Decider()
             game = Game(width=WIDTH, height=HEIGHT)
-            loss = None
             for game_before, game_after in game.train(decider):
                 with ensure_time(SLEEP):
                     display_game(game_before.draw_map(), stdscr)
                     state = game2tensor(game_before)
-                    my_print("step: ", trainer.total_steps)
+                    with torch.no_grad():
+                        my_print(policy_network(state))
                     my_print('loss:', loss)
 
                     next_state = game2tensor(game_after)
 
                     if next_state is None:  # game failed
-                        reward = -10
+                        reward = 0
                     elif next_state is True:  # success
                         reward = 10
+                        next_state = game2tensor(game_after)
                     else:
                         delta_length = len(game_after.snake) - len(game_before.snake)
                         delta_distance = game_after.head2food() - game_before.head2food()
-                        reward = delta_length * 2 - delta_distance / SIDE
+                        if delta_length == 0:
+                            reward = 1 - delta_distance / MAX_DIST
+                        else:
+                            reward = delta_length * 2
+                    assert reward >= 0
                     # noinspection PyCallingNonCallable,PyUnresolvedReferences
                     reward = torch.tensor([reward], dtype=torch.float32)
 
@@ -109,7 +142,7 @@ def main(stdscr):
         pass
     finally:
         save_model()
-    return "stop at {}".format(trainer.total_steps)
+    return "stop at {}".format(loss)
 
 
 if __name__ == '__main__':

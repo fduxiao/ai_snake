@@ -42,9 +42,11 @@ class DQN(nn.Module):
         # noinspection PyTypeChecker
         output_dim = len(Direction)
         hidden_dim = input_dim * 2
-        self.dnn = DNN(input_dim, *([hidden_dim] * 2), output_dim)
-        # self.linear = nn.Linear(hidden_dim, output_dim)
-        # self.softmax = nn.Softmax(1)
+        self.dnn = DNN(
+            input_dim,
+            *([hidden_dim] * 1),
+            output_dim
+        )
 
     def forward(self, input_tensor):
         dnn_result = self.dnn(input_tensor)
