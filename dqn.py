@@ -57,7 +57,7 @@ class DQNTrainer:
             eps_start=0.9,
             eps_end=0.05,
             decay_step=200,
-            target_update=10,
+            target_update=20,
             capacity=10000,
             optimizer=None,
     ):

@@ -15,11 +15,11 @@ SLEEP = 0.1
 SAVE_TIME = 1000
 WIDTH = 20
 HEIGHT = 10
-DECAY_STEP = 200
+DECAY_STEP = 1000
 SIDE = math.sqrt(WIDTH*HEIGHT)
 MAX_DIST = math.ceil(math.sqrt(WIDTH ** 2 + HEIGHT ** 2))
 policy_network = DQN(width=WIDTH, height=HEIGHT)
-optimizer = optim.SGD(policy_network.parameters(), lr=1e-3)
+optimizer = optim.SGD(policy_network.parameters(), lr=1e-5)
 POLICY_PATH = 'data/policy.pt'
 if os.path.isfile(POLICY_PATH):
     policy_network = torch.load(POLICY_PATH)
@@ -49,7 +49,12 @@ class SnakeTrainer(DQNTrainer):
 
 
 # noinspection PyTypeChecker
-trainer = SnakeTrainer(policy_network, len(Direction), decay_step=DECAY_STEP)
+trainer = SnakeTrainer(
+    policy_network,
+    len(Direction),
+    decay_step=DECAY_STEP,
+    optimizer=optimizer
+)
 TRAINER_PATH = 'data/trainer.pkl'
 if os.path.isfile(TRAINER_PATH):
     with open(TRAINER_PATH, 'rb') as f_decay_read:

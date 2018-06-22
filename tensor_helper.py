@@ -22,13 +22,11 @@ def game2tensor(game: Game, is_map=False):
         game_map = game.draw_map()
     game_list = list()
     for line in game_map:
-        for cell in line:
-            # noinspection PyTypeChecker
-            cell_list = [0.] * len(MapStatus)
-            cell_list[cell.value] = 1.
-            game_list += cell_list
+        # noinspection PyTypeChecker
+        line_list = [cell.value / len(MapStatus) for cell in line]
+        game_list.append(line_list)
     # noinspection PyCallingNonCallable,PyUnresolvedReferences
-    return torch.tensor([game_list], dtype=torch.float32)
+    return torch.tensor([[game_list]], dtype=torch.float32)
 
 
 def map2tensor(game_map):
