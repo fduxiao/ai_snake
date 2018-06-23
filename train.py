@@ -15,7 +15,8 @@ SLEEP = 0.1
 SAVE_TIME = 1000
 WIDTH = 20
 HEIGHT = 10
-DECAY_STEP = 1000
+DECAY_STEP = 2000
+BATCHC_SIZE = 1
 SIDE = math.sqrt(WIDTH*HEIGHT)
 MAX_DIST = math.ceil(math.sqrt(WIDTH ** 2 + HEIGHT ** 2))
 policy_network = DQN(width=WIDTH, height=HEIGHT)
@@ -53,7 +54,8 @@ trainer = SnakeTrainer(
     policy_network,
     len(Direction),
     decay_step=DECAY_STEP,
-    optimizer=optimizer
+    optimizer=optimizer,
+    batch_size=BATCHC_SIZE,
 )
 TRAINER_PATH = 'data/trainer.pkl'
 if os.path.isfile(TRAINER_PATH):
@@ -116,13 +118,15 @@ def main(stdscr):
                     display_game(game_before.draw_map(), stdscr)
                     state = game2tensor(game_before)
                     with torch.no_grad():
-                        my_print(policy_network(state))
+                        values = policy_network(state)
+                        my_print(values)
+                        my_print(Direction(values.max(1)[1].item()))
                     my_print('loss:', loss)
 
                     next_state = game2tensor(game_after)
 
                     if next_state is None:  # game failed
-                        reward = 0
+                        reward = -10
                     elif next_state is True:  # success
                         reward = 10
                         next_state = game2tensor(game_after)
@@ -130,10 +134,9 @@ def main(stdscr):
                         delta_length = len(game_after.snake) - len(game_before.snake)
                         delta_distance = game_after.head2food() - game_before.head2food()
                         if delta_length == 0:
-                            reward = 1 - delta_distance / MAX_DIST
+                            reward = - delta_distance
                         else:
                             reward = delta_length * 2
-                    assert reward >= 0
                     # noinspection PyCallingNonCallable,PyUnresolvedReferences
                     reward = torch.tensor([reward], dtype=torch.float32)
 

@@ -1,5 +1,5 @@
 import torch.nn as nn
-
+import torch
 from basic_game import Direction
 
 
@@ -35,21 +35,30 @@ class DNN(nn.Module):
 
 
 class DQN(nn.Module):
-    def __init__(self, width, height):
+    def __init__(self, width, height, hidden_size=128, num_layers=1):
         super().__init__()
         # noinspection PyTypeChecker
-        self.conv1 = nn.Conv2d(1, 16, kernel_size=3, padding=1)
-        self.bn1 = nn.BatchNorm2d(16)
-        self.conv2 = nn.Conv2d(16, 32, kernel_size=3, padding=1)
-        self.bn2 = nn.BatchNorm2d(32)
-        self.conv3 = nn.Conv2d(32, 32, kernel_size=3, padding=1)
-        self.bn3 = nn.BatchNorm2d(32)
-        # noinspection PyTypeChecker
-        self.head = nn.Linear(width * height * 32, len(Direction))
-        self.relu = nn.ReLU()
+        output_dim = len(Direction)
+        self.lstm = nn.LSTM(2, hidden_size, num_layers, batch_first=True)
+        self.width = width
+        self.height = height
+        self.hidden = self.init_hidden()
+        self.linear = nn.Linear(hidden_size+2, output_dim)
+
+    def init_hidden(self, batch=1):
+        hidden_size = self.lstm.num_layers, batch, self.lstm.hidden_size
+        # noinspection PyUnresolvedReferences
+        return torch.randn(hidden_size), torch.randn(hidden_size)
 
     def forward(self, x):
-        x = self.relu(self.bn1(self.conv1(x)))
-        x = self.relu(self.bn2(self.conv2(x)))
-        x = self.relu(self.bn3(self.conv3(x)))
-        return self.head(x.view(x.size(0), -1))
+        if self.hidden[0].size(1) != len(x):
+            self.hidden = self.init_hidden(batch=len(x))
+        # x: batch sequence input
+        food = x[:, 0]
+        snake = x[:, 1:]
+        memory, self.hidden = self.lstm(snake, self.hidden)
+        memory = memory[:, -1]
+        # noinspection PyUnresolvedReferences
+        combined = torch.cat([food, memory], dim=1)
+        output = self.linear(combined)
+        return output
