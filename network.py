@@ -47,7 +47,6 @@ class DQN(nn.Module):
 
     def init_hidden(self, batch=1):
         hidden_size = self.lstm.num_layers, batch, self.lstm.hidden_size
-        # noinspection PyUnresolvedReferences
         return torch.randn(hidden_size), torch.randn(hidden_size)
 
     def forward(self, x):
@@ -58,7 +57,6 @@ class DQN(nn.Module):
         snake = x[:, 1:]
         memory, self.hidden = self.lstm(snake, self.hidden)
         memory = memory[:, -1]
-        # noinspection PyUnresolvedReferences
-        combined = torch.cat([food, memory], dim=1)
+        combined = torch.cat((food, memory), dim=1)
         output = self.linear(combined)
         return output

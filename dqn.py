@@ -109,7 +109,7 @@ class DQNTrainer:
                 return self.policy_net(state).max(1)[1].view(1, 1)
         else:
             # noinspection PyCallingNonCallable,PyUnresolvedReferences,PyTypeChecker
-            return torch.tensor([[random.randrange(self.action_range)]], dtype=torch.long)
+            return torch.tensor([[random.randrange(*self.action_range)]], dtype=torch.long)
 
     @contextmanager
     def prev_net(self):

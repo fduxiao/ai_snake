@@ -6,6 +6,7 @@ __all__ = ['Direction', 'Game', 'MapStatus', 'MoveStatus']
 
 
 class Direction(enum.Enum):
+    NOPE = -1
     UP = 0
     DOWN = 1
     LEFT = 2
@@ -48,11 +49,11 @@ class Game:
         game.result = self.result
         return game
 
-    def __init__(self, width=80, height=24, x: int=None, y: int=None, direction=None):
+    def __init__(self, width=80, height=24, x: int = None, y: int = None, direction=None):
         if not self.reset(width, height, x, y, direction):
             raise ValueError("The game should have at least two empty block")
 
-    def reset(self, width, height, x: int=None, y: int=None, direction=None):
+    def reset(self, width, height, x: int = None, y: int = None, direction=None):
         self.result = None
         self.width = width
         self.height = height

@@ -16,7 +16,7 @@ SAVE_TIME = 1000
 WIDTH = 20
 HEIGHT = 10
 DECAY_STEP = 2000
-BATCHC_SIZE = 1
+BATCH_SIZE = 1
 SIDE = math.sqrt(WIDTH*HEIGHT)
 MAX_DIST = math.ceil(math.sqrt(WIDTH ** 2 + HEIGHT ** 2))
 policy_network = DQN(width=WIDTH, height=HEIGHT)
@@ -52,10 +52,10 @@ class SnakeTrainer(DQNTrainer):
 # noinspection PyTypeChecker
 trainer = SnakeTrainer(
     policy_network,
-    len(Direction),
+    (0, 4),
     decay_step=DECAY_STEP,
     optimizer=optimizer,
-    batch_size=BATCHC_SIZE,
+    batch_size=BATCH_SIZE,
 )
 TRAINER_PATH = 'data/trainer.pkl'
 if os.path.isfile(TRAINER_PATH):
@@ -132,11 +132,8 @@ def main(stdscr):
                         next_state = game2tensor(game_after)
                     else:
                         delta_length = len(game_after.snake) - len(game_before.snake)
-                        delta_distance = game_after.head2food() - game_before.head2food()
-                        if delta_length == 0:
-                            reward = - delta_distance
-                        else:
-                            reward = delta_length * 2
+                        delta_distance = game_before.head2food() / game_after.head2food()
+                        reward = delta_length * 2 + delta_length
                     # noinspection PyCallingNonCallable,PyUnresolvedReferences
                     reward = torch.tensor([reward], dtype=torch.float32)
 
