@@ -55,7 +55,7 @@ def interactive_decider(stdscr):
         d = stdscr.getch()
         if d not in rel_map:
             continue
-        return rel_map.get(d, Direction.NOPE)
+        return rel_map.get(d, None)
 
 
 def display_and_play_game(stdscr, width, height, decider=None):

@@ -6,11 +6,11 @@ __all__ = ['Direction', 'Game', 'MapStatus', 'MoveStatus']
 
 
 class Direction(enum.Enum):
-    NOPE = -1
     UP = 0
     DOWN = 1
     LEFT = 2
     RIGHT = 3
+    NOPE = 4
 
 
 class MapStatus(enum.Enum):
@@ -39,6 +39,8 @@ class Game:
     direction = None
     result = None
 
+    n_step = 0
+
     def copy(self):
         game = Game()
         game.width = self.width
@@ -47,17 +49,23 @@ class Game:
         game.food = self.food
         game.direction = self.direction
         game.result = self.result
+        game.n_step = self.n_step
         return game
 
     def __init__(self, width=80, height=24, x: int = None, y: int = None, direction=None):
         if not self.reset(width, height, x, y, direction):
             raise ValueError("The game should have at least two empty block")
 
-    def reset(self, width, height, x: int = None, y: int = None, direction=None):
-        self.result = None
+    def reset(self, width=None, height=None, x: int = None, y: int = None, direction=None):
+        if width is None:
+            width = self.width
+        if height is None:
+            height = self.height
         self.width = width
         self.height = height
         self.snake = list()
+        self.result = None
+        self.n_step = 0
 
         if x is None:
             x = random.randrange(width)
@@ -121,6 +129,7 @@ class Game:
         :return: false if the snake hits something
                  true for success
         """
+        self.n_step += 1
         if direction is not None:
             self.direction = direction
 
@@ -221,3 +230,7 @@ class Game:
         delta_x = head[0] - food[0]
         delta_y = head[1] - food[1]
         return (delta_x ** 2 + delta_y ** 2) ** 0.5
+
+    @property
+    def len_per_step(self):
+        return len(self.snake) / self.n_step
